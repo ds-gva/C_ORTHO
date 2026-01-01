@@ -4,6 +4,8 @@
 #include "../engine/resources.h"
 #include "../engine/utils.h"
 #include "../engine/math_common.h"
+#include "../engine/tilemap.h"
+#include "../engine/lighting.h"
 #include <stdlib.h>
 #include <time.h>
 
@@ -12,6 +14,9 @@
 #define TAG_BALL    (1 << 1)
 
 static Texture* tex_boat;
+static Texture* tex_tile;
+static Tilemap* test_map;
+static int player_light;  // Light that follows the player
 
 void init_game(GameState *state) {
     srand((unsigned int)time(NULL));
@@ -20,6 +25,24 @@ void init_game(GameState *state) {
     
     // Load textures
     tex_boat = resource_load_texture("assets/boat.png");
+    tex_tile = resource_load_texture("assets/tile.png");  // You'll need to add this image
+    
+    // Create a test tilemap (25x19 tiles, each 32x32 pixels)
+    test_map = tilemap_create(25, 19, 32, 32);
+    tilemap_fill(test_map, 0);  // Fill entire map with tile ID 0 (meaning "draw")
+    
+    // --- LIGHTING SETUP ---
+    lighting_init();
+    lighting_set_ambient((Color){0.15f, 0.15f, 0.2f, 1.0f});  // Dark blue-ish ambient
+    
+    // Player carries a warm torch light
+    player_light = lighting_add_point(400, 300, 200.0f, (Color){1.0f, 0.9f, 0.7f, 1.0f}, 1.0f);
+    
+    // Static campfire in the corner
+    lighting_add_point(100, 100, 120.0f, (Color){1.0f, 0.5f, 0.2f, 1.0f}, 0.9f);
+    
+    // Cool blue light on the other side
+    lighting_add_point(700, 500, 150.0f, (Color){0.3f, 0.5f, 1.0f, 1.0f}, 0.7f);
     
     // Setup world
     state->background = COLOR_BLACK;
@@ -98,6 +121,9 @@ void update_game(GameState *state, float dt) {
         }
     }
     
+    // --- UPDATE PLAYER LIGHT ---
+    lighting_update_point(player_light, player->x, player->y);
+    
     // --- CAMERA FOLLOWS PLAYER (smooth) ---
     state->camera.x = lerpf(state->camera.x, player->x, 0.1f);
     state->camera.y = lerpf(state->camera.y, player->y, 0.1f);
@@ -108,11 +134,18 @@ void update_game(GameState *state, float dt) {
     state->camera.zoom = clampf(state->camera.zoom, 0.5f, 2.0f);
 }
 
+void render_world(GameState *state) {
+    // Render tilemap BEFORE entities (this is called inside camera mode)
+    tilemap_render_simple(test_map, tex_tile, 0, 0);
+}
+
 void render_game(GameState *state) {
-    
+    // This is for UI/HUD elements that appear on top of everything (screen space)
 }
 
 void close_game(GameState *state) {
+    // Clean up tilemap
+    tilemap_destroy(test_map);
+    
     // Textures are cleaned up by resources_shutdown()
-    // Or manually: resource_unload_texture("assets/boat.png");
 }

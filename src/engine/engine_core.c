@@ -18,6 +18,10 @@ void engine_render(GameState *state) {
     set_camera(state->camera.x, state->camera.y, state->camera.zoom); // Set the camera position and zoom level
 
     begin_camera_mode();
+    
+    // Let game render world-space content first (tilemaps, backgrounds)
+    render_world(state);
+    
     // Render all entities
     for (int i = 0; i < state->count; i++) {
         Entity *e = &state->entities[i];

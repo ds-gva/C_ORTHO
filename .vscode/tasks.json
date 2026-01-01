@@ -22,6 +22,8 @@
                 "${fileDirname}\\src\\engine\\engine_core.c",
                 "${fileDirname}\\src\\engine\\input.c",
                 "${fileDirname}\\src\\engine\\resources.c",
+                "${fileDirname}\\src\\engine\\tilemap.c",
+                "${fileDirname}\\src\\engine\\lighting.c",
                 "${fileDirname}\\third_party\\glad\\glad.c",
 
             ],

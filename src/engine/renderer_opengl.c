@@ -7,6 +7,7 @@
 #include <stdlib.h> 
 #include "math_common.h"
 #include "engine.h"
+#include "lighting.h"
 
 GLint g_texture_filter_mode = GL_LINEAR;
 GLuint current_texture_id = 0; // Tracks which texture is currently active
@@ -176,6 +177,9 @@ void flush_batch() {
     if (vertex_count == 0) return;
 
     glUseProgram(shader_program);
+    
+    // Apply lighting uniforms
+    lighting_apply();
 
     // Camera Logic
     // We construct a simple 2D View Matrix manually:

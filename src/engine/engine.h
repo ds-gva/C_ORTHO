@@ -132,7 +132,8 @@ void engine_render(GameState *state);
 // GAME API
 void init_game(GameState *state);
 void update_game(GameState *state, float dt);
-void render_game(GameState *state);
+void render_world(GameState *state);  // Called inside camera mode, BEFORE entities (for tilemaps, backgrounds)
+void render_game(GameState *state);   // Called after camera mode (for UI/HUD)
 void close_game(GameState *state);
 
 
