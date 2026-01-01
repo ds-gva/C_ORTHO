@@ -7,11 +7,13 @@
             "args": [
                 "/Zi",
                 "/EHsc",
+                "/MD",
                 "/Fe:",
                 "${fileDirname}\\bin\\my_game.exe",
                 "/Fo${fileDirname}\\bin\\",
                 "/Fd${fileDirname}\\bin\\",
-                "${fileDirname}\\platform_windows.c", 
+                "/I", "${fileDirname}\\include",
+                "${fileDirname}\\platform_glfw.c", 
                 "${fileDirname}\\game.c",            
                 "${fileDirname}\\renderer_opengl.c",
                 "${fileDirname}\\physics.c",
@@ -19,9 +21,13 @@
                 "${fileDirname}\\entity.c",
                 "${fileDirname}\\engine_core.c",
                 "${fileDirname}\\input.c",
+                "${fileDirname}\\glad.c",
+
             ],
             "options": {
-                "cwd": "${fileDirname}"
+                "cwd": "${fileDirname}",
+
+
             },
             "problemMatcher": [
                 "$msCompile"

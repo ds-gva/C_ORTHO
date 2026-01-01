@@ -4,7 +4,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 
 #include <windows.h>
-#include <GL/gl.h>
+#include <glad/glad.h>
 #include <math.h>
 #include "math_common.h"
 #include "engine.h"
