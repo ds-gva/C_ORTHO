@@ -6,6 +6,7 @@
 extern int g_screen_width;
 extern int g_screen_height;
 extern int g_debug_draw;
+extern int g_y_sort_enabled;  // Toggle Y-sorting (1 = on, 0 = off)
 
 typedef struct {
     float r, g, b, a;
@@ -40,6 +41,14 @@ typedef struct {
     int height;
 } Texture;
 
+// Sorting layers for Y-sorting (lower = drawn first/behind)
+typedef enum {
+    SORT_LAYER_BACKGROUND = 0,   // Floor decals, shadows
+    SORT_LAYER_GROUND = 1,       // Ground-level objects
+    SORT_LAYER_DEFAULT = 2,      // Normal entities (players, enemies, items)
+    SORT_LAYER_OVERHEAD = 3,     // Tree tops, roofs (always on top)
+} SortLayer;
+
 // ENTITIY
 typedef struct {
     uint32_t id; // unique identifier
@@ -49,6 +58,11 @@ typedef struct {
     float x, y; // position
     float rotation; // degrees
     float scale;
+    
+    // --- DEPTH SORTING ---
+    int sort_layer;         // Coarse layer (SORT_LAYER_DEFAULT, etc.) - sorted first
+    int z_order;            // Fine control within layer (higher = in front) - sorted second
+    float sort_offset_y;    // Added to Y for Y-sorting (feet vs center) - sorted third
 
     // --- PHYSICS --
     float vel_x, vel_y; // velocity
@@ -64,7 +78,6 @@ typedef struct {
     union {
         struct { float width, height; } rect;
         struct { float radius; } circle;
-        struct { float base, height; } triangle;
         struct { Texture *texture; float width, height; } sprite;
     } visual; // Named this union "visual" to be explicit
 

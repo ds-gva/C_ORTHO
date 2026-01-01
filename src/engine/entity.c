@@ -10,6 +10,11 @@ static void entity_set_defaults(Entity *e) {
     e->drag = 0.95f;
     e->move_speed = 500.0f;
     e->collider.active = 1;
+    
+    // Depth sorting defaults
+    e->sort_layer = SORT_LAYER_DEFAULT;
+    e->z_order = 0;
+    e->sort_offset_y = 0.0f;
 }
 
 Entity* entity_alloc(GameState *state) {

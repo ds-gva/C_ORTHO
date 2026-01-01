@@ -1,9 +1,42 @@
 // engine_core.c
 #include "engine.h"
 #include "physics.h"
+#include <stdlib.h>
+
+// Y-sorting toggle (default ON)
+int g_y_sort_enabled = 1;
 
 void engine_update(GameState *state, float dt) {
     physics_update(state, dt);
+}
+
+// --- Y-SORTING ---
+// We sort pointers to entities, not the entities themselves (faster, preserves array)
+static Entity* sorted_entities[MAX_ENTITIES];
+static int sorted_count = 0;
+
+// Comparison function for qsort: layer → z_order → Y position
+static int compare_entities_for_sort(const void* a, const void* b) {
+    Entity* ea = *(Entity**)a;
+    Entity* eb = *(Entity**)b;
+    
+    // 1. Compare by sort layer (coarse grouping)
+    if (ea->sort_layer != eb->sort_layer) {
+        return ea->sort_layer - eb->sort_layer;
+    }
+    
+    // 2. Compare by z_order (fine control within layer)
+    if (ea->z_order != eb->z_order) {
+        return ea->z_order - eb->z_order;
+    }
+    
+    // 3. Same layer and z_order: sort by Y position (+ offset)
+    float ya = ea->y + ea->sort_offset_y;
+    float yb = eb->y + eb->sort_offset_y;
+    
+    if (ya < yb) return -1;
+    if (ya > yb) return 1;
+    return 0;
 }
 
 // Here we render all entities
@@ -22,10 +55,22 @@ void engine_render(GameState *state) {
     // Let game render world-space content first (tilemaps, backgrounds)
     render_world(state);
     
-    // Render all entities
+    // Build sorted list of active entities
+    sorted_count = 0;
     for (int i = 0; i < state->count; i++) {
-        Entity *e = &state->entities[i];
-        if (!e->active) continue;
+        if (state->entities[i].active) {
+            sorted_entities[sorted_count++] = &state->entities[i];
+        }
+    }
+    
+    // Sort by layer, then by Y (if enabled)
+    if (g_y_sort_enabled) {
+        qsort(sorted_entities, sorted_count, sizeof(Entity*), compare_entities_for_sort);
+    }
+    
+    // Render all entities in sorted order
+    for (int i = 0; i < sorted_count; i++) {
+        Entity *e = sorted_entities[i];
 
         float s = e->scale;
         
