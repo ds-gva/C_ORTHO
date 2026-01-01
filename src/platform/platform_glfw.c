@@ -3,8 +3,9 @@
 #include <GLFW/glfw3.h>
 
 #include <stdio.h>
-#include "engine.h"
-#include "input.h"
+#include "../engine/engine.h"
+#include "../engine/input.h"
+#include "../engine/resources.h"
 
 // --- LINKER SETTINGS ---
 #pragma comment(lib, "glfw3.lib")
@@ -163,7 +164,7 @@ int main() {
     g_screen_width = LOGICAL_WIDTH;
     g_screen_height = LOGICAL_HEIGHT;
     // 3. Create Window
-    GLFWwindow* window = glfwCreateWindow(g_screen_width, g_screen_height, "MiniC Engine (GLAD)", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(g_screen_width, g_screen_height, "C_ORTHO2D Mini Game Engine", NULL, NULL);
     if (!window) {
         printf("Failed to create GLFW window\n");
         glfwTerminate();
@@ -230,6 +231,7 @@ int main() {
     }
 
     close_game(&state);
+    resources_shutdown();  // Free all cached resources
     glfwDestroyWindow(window);
     glfwTerminate();
     

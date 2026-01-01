@@ -22,7 +22,6 @@ typedef struct {
 typedef enum {
     SHAPE_RECT,
     SHAPE_CIRCLE,
-    SHAPE_TRIANGLE,
     VISUAL_SPRITE
 
 } ShapeType;
@@ -107,9 +106,6 @@ typedef struct {
     Color background;
 } GameState;
 
-// RESOURCES API
-Texture load_texture(const char *filename);
-
 // RENDERER API
 void init_renderer();
 
@@ -122,7 +118,7 @@ void enable_scissor_test();
 void draw_rect(float x, float y, float w, float h, float rotation, Color color, int hollow);
 void draw_circle(float x, float y, float radius, float rotation, Color color, int hollow);
 void draw_texture(Texture texture, float x, float y, float w, float h, float rotation, Color tint);
-void destroy_texture(Texture *tex);
+void flush_batch();
 
 // Camera
 void set_camera(float x, float y, float zoom);
@@ -172,5 +168,8 @@ int is_key_released(EngineKey key);  // Just released this frame
 void get_move_input(float *out_x, float *out_y);  // WASD + Arrows combined
 void get_mouse_pos(float *out_x, float *out_y);
 void get_world_mouse_pos(GameState *state, float *out_x, float *out_y);
+
+// UTILS API
+char* load_file_text(const char* path);
 
 #endif

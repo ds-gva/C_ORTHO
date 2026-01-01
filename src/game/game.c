@@ -1,8 +1,9 @@
 // game.c — Engine Tech Demo
-#include "engine.h"
-#include "entity.h"
-#include "utils.h"
-#include "math_common.h"
+#include "../engine/engine.h"
+#include "../engine/entity.h"
+#include "../engine/resources.h"
+#include "../engine/utils.h"
+#include "../engine/math_common.h"
 #include <stdlib.h>
 #include <time.h>
 
@@ -10,7 +11,7 @@
 #define TAG_PLAYER  (1 << 0)
 #define TAG_BALL    (1 << 1)
 
-static Texture tex_boat;
+static Texture* tex_boat;
 
 void init_game(GameState *state) {
     srand((unsigned int)time(NULL));
@@ -18,7 +19,7 @@ void init_game(GameState *state) {
     set_texture_filter_mode(1);
     
     // Load textures
-    tex_boat = load_texture("assets/boat.png");
+    tex_boat = resource_load_texture("assets/boat.png");
     
     // Setup world
     state->background = COLOR_BLACK;
@@ -29,7 +30,7 @@ void init_game(GameState *state) {
     spawn_world_bounds(state, 800, 600);
     
     // Spawn player as SPRITE instead of ball
-    Entity *player = spawn_sprite(state, &tex_boat, 400, 300);
+    Entity *player = spawn_sprite(state, tex_boat, 400, 300);
     player->scale = 0.3f;
     player->tag = TAG_PLAYER;
     player->collider.layer = LAYER_PLAYER;
@@ -112,5 +113,6 @@ void render_game(GameState *state) {
 }
 
 void close_game(GameState *state) {
-    destroy_texture(&tex_boat);  // Clean up texture
+    // Textures are cleaned up by resources_shutdown()
+    // Or manually: resource_unload_texture("assets/boat.png");
 }

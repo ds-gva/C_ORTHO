@@ -1,24 +1,18 @@
-// This is all built using OpenGL 1.1 through the standard header provided in windows (gl.h)
-// we will upgrade this going forward
+// renderer_opengl.c — Modern OpenGL batch renderer
 
-#define STB_IMAGE_IMPLEMENTATION
-
-#include <windows.h>
 #include <glad/glad.h>
 #include <math.h>
+#include <stddef.h>
+#include <stdio.h> 
+#include <stdlib.h> 
 #include "math_common.h"
 #include "engine.h"
-#include "stb_image.h"
 
 GLint g_texture_filter_mode = GL_LINEAR;
 GLuint current_texture_id = 0; // Tracks which texture is currently active
 
-// --- MODERN RENDERER GLOBALS ---
 GLuint shader_program;
 GLuint VAO, VBO; // Vertex Array & Buffer Objects (We will setup these in Step 2)
-
-// --- SHADER SOURCE CODE ---
-// This is GLSL (OpenGL Shading Language). It looks like C.
 
 static Camera current_camera = {0.0f, 0.0f, 1.0f};
 static int render_mode_camera = 0;
@@ -42,77 +36,6 @@ GLuint VBO; // Vertex Buffer (GPU Memory for vertices)
 GLuint VAO; // Vertex Array (State configuration)
 GLuint IBO; // Index Buffer (GPU Memory for indices)
 GLuint white_texture; // Default 1x1 white texture for untextured rects
-
-
-const char *vertex_shader_src = 
-    "#version 330 core\n"
-    "layout (location = 0) in vec2 aPos;\n"
-    "layout (location = 1) in vec4 aColor;\n"
-    "layout (location = 2) in vec2 aTexCoord;\n"
-    "layout (location = 3) in float aType;\n"
-
-    "out vec4 vColor;\n"
-    "out vec2 vTexCoord;\n"
-    "out float vType;\n"
-
-    "uniform mat4 uProjection;\n"
-    "uniform mat4 uView;\n"
-
-    "void main() {\n"
-    "   vColor = aColor;\n"
-    "   vTexCoord = aTexCoord;\n"
-    "   vType = aType;\n"
-    "   gl_Position = uProjection * uView * vec4(aPos.x, aPos.y, 0.0, 1.0);\n"
-    "}\0";
-
-const char *fragment_shader_src = 
-    "#version 330 core\n"
-    "out vec4 FragColor;\n"
-    
-    "in vec4 vColor;\n"
-    "in vec2 vTexCoord;\n"
-    "in float vType;\n" 
-
-    "uniform sampler2D uTexture;\n"
-    
-    "void main() {\n"
-    "   vec4 texColor = texture(uTexture, vTexCoord);\n"
-    "   vec4 finalColor = texColor * vColor;\n"
-    "   float alpha = finalColor.a;\n"
-
-    "   // --- TYPE 1: SOLID CIRCLE ---\n"
-    "   if (vType > 0.9 && vType < 1.1) {\n"
-    "       float dist = distance(vTexCoord, vec2(0.5));\n"
-    "       float delta = 0.01;\n"
-    "       alpha = smoothstep(0.5, 0.5 - delta, dist);\n"
-    "   }\n"
-    
-    "   // --- TYPE 2: HOLLOW CIRCLE (Border) ---\n"
-    "   else if (vType > 1.9 && vType < 2.1) {\n"
-    "       float dist = distance(vTexCoord, vec2(0.5));\n"
-    "       float delta = 0.01;\n"
-    "       float border = 0.05; // Thickness\n"
-    "       // Cut out the middle\n"
-    "       float outer = smoothstep(0.5, 0.5 - delta, dist);\n"
-    "       float inner = smoothstep(0.5 - border, 0.5 - border - delta, dist);\n"
-    "       alpha = outer - inner;\n"
-    "   }\n"
-
-    "   // --- TYPE 3: HOLLOW RECT (Border) ---\n"
-    "   else if (vType > 2.9 && vType < 3.1) {\n"
-    "       float border = 0.05; // Thickness\n"
-    "       // Check if we are close to any edge (u=0, u=1, v=0, v=1)\n"
-    "       float mask = 0.0;\n"
-    "       if (vTexCoord.x < border || vTexCoord.x > 1.0 - border) mask = 1.0;\n"
-    "       if (vTexCoord.y < border || vTexCoord.y > 1.0 - border) mask = 1.0;\n"
-    "       alpha = mask;\n"
-    "   }\n"
-
-    "   finalColor.a = alpha * vColor.a;\n"
-    "   FragColor = finalColor;\n"
-    "   if (FragColor.a < 0.01) discard;\n"
-    "}\0";
-
 
 void set_texture_filter_mode(int mode) {
     // Mode should be 0 (Nearest/Retro) or 1 (Linear/Smooth)
@@ -139,8 +62,23 @@ GLuint compile_shader(GLenum type, const char *source) {
 
 // Combine them into a Program
 void init_shaders() {
+    // Load the shader source code from files
+    char* vertex_shader_src = load_file_text("shaders/basic.vert");
+    char* fragment_shader_src = load_file_text("shaders/basic.frag");
+
+    if (!vertex_shader_src || !fragment_shader_src) {
+        printf("FATAL: Failed to load shaders!\n");
+        // Handle error (exit or fallback)
+        return;
+    }
+    
+    // Compile the shaders
     GLuint vs = compile_shader(GL_VERTEX_SHADER, vertex_shader_src);
     GLuint fs = compile_shader(GL_FRAGMENT_SHADER, fragment_shader_src);
+
+    
+    free(vertex_shader_src);
+    free(fragment_shader_src);
 
     shader_program = glCreateProgram();
     glAttachShader(shader_program, vs);
@@ -442,12 +380,6 @@ void draw_texture(Texture texture, float x, float y, float w, float h, float rot
     vertex_count += 4;
 }
 
-void destroy_texture(Texture *tex) {
-    if (tex->id) {
-        glDeleteTextures(1, &tex->id);
-        tex->id = 0;
-    }
-}
 
 // Set the camera position and zoom level//
 // At the moment the camera is stored as a global in current_camera ; probably wanna change this going forward
@@ -490,18 +422,6 @@ void init_renderer() {
     // Tell OpenGL the size of our window
     glViewport(0, 0, g_screen_width, g_screen_height);
 
-    // SETUP THE COORDINATE SYSTEM (The Matrix)
-    // We want 2D logic: Top-Left is (0,0), Bottom-Right is (w,h)
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    
-    // glOrtho(left, right, bottom, top, near, far)
-    // Note: We flip bottom and top to make Y=0 at the top!
-    glOrtho(0, g_screen_width, g_screen_height, 0, -1, 1);
-    
-    glMatrixMode(GL_MODELVIEW);
-
-    glLoadIdentity();
     glEnable(GL_BLEND);
     glEnable(GL_LINE_SMOOTH);
     glEnable(GL_SCISSOR_TEST);
@@ -526,43 +446,4 @@ void clear_game_area(Color color) {
 
 void enable_scissor_test() {
     glEnable(GL_SCISSOR_TEST);
-}
-
-Texture load_texture(const char *filename) {
-    Texture tex = {0};
-    
-    // Load Image Data from Disk (CPU RAM)
-    int channels;
-    unsigned char *data = stbi_load(filename, &tex.width, &tex.height, &channels, 0);
-    
-    if (!data) {
-        // Simple error handling for now
-        // In a real engine, you'd log this to a console/file
-        return tex; 
-    }
-
-    // Generate Texture on GPU
-    glGenTextures(1, &tex.id);
-    glBindTexture(GL_TEXTURE_2D, tex.id);
-
-    // Setup Filtering 
-    // GL_NEAREST = Crisp pixel
-    // GL_LINEAR  = Blurry/Smooth
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, g_texture_filter_mode);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, g_texture_filter_mode);
-    
-    // Setup Wrapping (What happens if we draw outside the 0-1 range?)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-    // 4. Upload Data to VRAM
-    // Determine format based on channels (3 = RGB, 4 = RGBA)
-    int format = (channels == 4) ? GL_RGBA : GL_RGB;
-    
-    glTexImage2D(GL_TEXTURE_2D, 0, format, tex.width, tex.height, 0, format, GL_UNSIGNED_BYTE, data);
-
-    // 5. Free CPU RAM (GPU has a copy now, we don't need raw bytes anymore)
-    stbi_image_free(data);
-
-    return tex;
 }
