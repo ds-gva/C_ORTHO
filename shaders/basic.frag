@@ -50,17 +50,24 @@ void main() {
     }
 
     // === LIGHTING CALCULATION ===
-    vec3 finalLight = uAmbient;  // Start with ambient
     
-    if (uLightingEnabled == 1 && uLightCount > 0) {
-        for (int i = 0; i < uLightCount; i++) {
-            float dist = distance(vWorldPos, uLightPos[i]);
-            
-            // Smooth falloff: 1 at center, 0 at radius edge
-            float attenuation = 1.0 - smoothstep(0.0, uLightRadius[i], dist);
-            
-            // Add this light's contribution
-            finalLight += uLightColor[i] * attenuation * uLightIntensity[i];
+    vec3 finalLight;
+    if (uLightingEnabled == 0) {
+
+        finalLight = vec3(1.0); // Full brightness
+
+    } else {
+        finalLight = uAmbient;
+        if (uLightCount > 0) {
+            for (int i = 0; i < uLightCount; i++) {
+                float dist = distance(vWorldPos, uLightPos[i]);
+                
+                // Smooth falloff: 1 at center, 0 at radius edge
+                float attenuation = 1.0 - smoothstep(0.0, uLightRadius[i], dist);
+                
+                // Add this light's contribution
+                finalLight += uLightColor[i] * attenuation * uLightIntensity[i];
+            }
         }
     }
     

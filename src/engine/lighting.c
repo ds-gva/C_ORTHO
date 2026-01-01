@@ -139,16 +139,20 @@ void lighting_apply(void) {
         if (!l->active) continue;
         
         char name[64];
-        
+
+        sprintf(name, "uLightPos[%d]", upload_index);
         loc = glGetUniformLocation(shader_program, name);
         if (loc != -1) glUniform2f(loc, l->x, l->y);
         
+        sprintf(name, "uLightColor[%d]", upload_index);
         loc = glGetUniformLocation(shader_program, name);
         if (loc != -1) glUniform3f(loc, l->color.r, l->color.g, l->color.b);
 
+        sprintf(name, "uLightRadius[%d]", upload_index);
         loc = glGetUniformLocation(shader_program, name);
         if (loc != -1) glUniform1f(loc, l->radius);
         
+        sprintf(name, "uLightIntensity[%d]", upload_index);
         loc = glGetUniformLocation(shader_program, name);
         if (loc != -1) glUniform1f(loc, l->intensity);
         
