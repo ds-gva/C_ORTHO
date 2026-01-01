@@ -49,11 +49,11 @@ const char *vertex_shader_src =
     "layout (location = 0) in vec2 aPos;\n"
     "layout (location = 1) in vec4 aColor;\n"
     "layout (location = 2) in vec2 aTexCoord;\n"
-    "layout (location = 3) in float aType;\n" // <--- Input
+    "layout (location = 3) in float aType;\n"
 
     "out vec4 vColor;\n"
     "out vec2 vTexCoord;\n"
-    "out float vType;\n" // <--- Output
+    "out float vType;\n"
 
     "uniform mat4 uProjection;\n"
     "uniform mat4 uView;\n"
@@ -61,7 +61,7 @@ const char *vertex_shader_src =
     "void main() {\n"
     "   vColor = aColor;\n"
     "   vTexCoord = aTexCoord;\n"
-    "   vType = aType;\n" // Pass it along
+    "   vType = aType;\n"
     "   gl_Position = uProjection * uView * vec4(aPos.x, aPos.y, 0.0, 1.0);\n"
     "}\0";
 
@@ -126,7 +126,7 @@ GLuint compile_shader(GLenum type, const char *source) {
     glShaderSource(shader, 1, &source, NULL);
     glCompileShader(shader);
 
-    // Check for errors (Crucial! Otherwise you get a black screen and no clue why)
+    // Check for errors
     int success;
     char infoLog[512];
     glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
