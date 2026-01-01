@@ -14,11 +14,27 @@
 #pragma comment(lib, "shell32.lib")
 // -----------------------
 
-// Global Variables
+// --- GLOBALS ---
+// Logical Size: The game "thinks" it is this size always.
+// 640x360 (Pixel Art), 1920x1080 (HD), or 1024x768 (Retro)
+const int LOGICAL_WIDTH = 1024;
+const int LOGICAL_HEIGHT = 768;
+
+// Physical Window Size (Updated by GLFW)
+int g_window_width = 1024;
+int g_window_height = 768;
+
+// Render Viewport (Calculated for Letterboxing)
+struct { float x, y, w, h, scale; } viewport = {0};
+
+// Engine Globals
 int g_screen_width = 1024;
 int g_screen_height = 768;
 int g_debug_draw = 1;
 int running = 1;
+
+int is_fullscreen = 0;
+int saved_x, saved_y, saved_w, saved_h; // To restore window after fullscreen
 
 // --- INPUT MAPPING ---
 static int glfw_to_engine_key(int key) {
@@ -39,9 +55,59 @@ static int glfw_to_engine_key(int key) {
     }
 }
 
+void update_viewport() {
+    float target_aspect = (float)LOGICAL_WIDTH / (float)LOGICAL_HEIGHT;
+    float window_aspect = (float)g_window_width / (float)g_window_height;
+    
+    if (window_aspect > target_aspect) {
+        // Window is too wide (black bars on sides)
+        viewport.h = (float)g_window_height;
+        viewport.w = viewport.h * target_aspect;
+        viewport.y = 0;
+        viewport.x = (g_window_width - viewport.w) / 2.0f;
+    } else {
+        // Window is too tall (black bars on top/bottom)
+        viewport.w = (float)g_window_width;
+        viewport.h = viewport.w / target_aspect;
+        viewport.x = 0;
+        viewport.y = (g_window_height - viewport.h) / 2.0f;
+    }
+    
+    viewport.scale = viewport.w / (float)LOGICAL_WIDTH;
+    
+    // Update OpenGL Viewport (Scissor Test clamps drawing to this area)
+    glViewport((GLint)viewport.x, (GLint)viewport.y, (GLint)viewport.w, (GLint)viewport.h);
+    glScissor((GLint)viewport.x, g_window_height - ((GLint)viewport.y + (GLint)viewport.h), (GLint)viewport.w, (GLint)viewport.h);
+}
+
+
+void toggle_fullscreen(GLFWwindow* window) {
+    if (!is_fullscreen) {
+        // SAVE current state
+        glfwGetWindowPos(window, &saved_x, &saved_y);
+        glfwGetWindowSize(window, &saved_w, &saved_h);
+        
+        // Switch to Fullscreen (Native Monitor Resolution)
+        GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+        const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+        
+        glfwSetWindowMonitor(window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+    } else {
+        // RESTORE windowed state
+        glfwSetWindowMonitor(window, NULL, saved_x, saved_y, saved_w, saved_h, 0);
+    }
+    is_fullscreen = !is_fullscreen;
+}
+
+
 // --- CALLBACKS ---
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    if (action == GLFW_PRESS && key == GLFW_KEY_F11) {
+        toggle_fullscreen(window);
+        return; // Don't pass F11 to game
+    }
     if (action == GLFW_REPEAT) return; 
+    
     int engine_key = glfw_to_engine_key(key);
     if (engine_key != -1) {
         input_update_key(engine_key, (action == GLFW_PRESS));
@@ -49,7 +115,19 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 }
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
-    input_update_mouse((float)xpos, (float)ypos);
+    // Convert Physical Mouse -> Logical Mouse
+    // 1. Subtract Black Bar offset
+    float mx = (float)xpos - viewport.x;
+    float my = (float)ypos - viewport.y;
+    
+    // 2. Un-scale
+    mx /= viewport.scale;
+    my /= viewport.scale;
+    
+    // 3. Clamp (Optional: prevent inputs outside the game area)
+    // if (mx < 0) mx = 0; if (mx > LOGICAL_WIDTH) mx = LOGICAL_WIDTH; ...
+
+    input_update_mouse(mx, my);
 }
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
@@ -60,24 +138,30 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
-    g_screen_width = width;
-    g_screen_height = height;
-    glViewport(0, 0, width, height);
+    g_window_width = width;
+    g_window_height = height;
+    update_viewport();
+    
+    // Force a re-render immediately so we don't see artifacts during drag
+    // (Optional, requires exposing render loop or triggering an event)
 }
+
 
 // --- MAIN ENTRY POINT ---
 int main() {
-    // 1. Initialize GLFW
+    // Initialize GLFW
     if (!glfwInit()) {
         printf("Failed to init GLFW\n");
         return -1;
     }
 
-    // 2. Configure (Compatibility Profile allows glBegin/glEnd AND Modern GL)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
 
+    // Set correct initial size
+    g_screen_width = LOGICAL_WIDTH;
+    g_screen_height = LOGICAL_HEIGHT;
     // 3. Create Window
     GLFWwindow* window = glfwCreateWindow(g_screen_width, g_screen_height, "MiniC Engine (GLAD)", NULL, NULL);
     if (!window) {
@@ -85,8 +169,9 @@ int main() {
         glfwTerminate();
         return -1;
     }
-    glfwMakeContextCurrent(window);
 
+
+    glfwMakeContextCurrent(window);
     // 4. LOAD OPENGL FUNCTIONS (GLAD)
     // This must happen AFTER window creation but BEFORE any drawing
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
@@ -94,6 +179,14 @@ int main() {
         return -1;
     }
     printf("OpenGL Loaded: %s\n", glGetString(GL_VERSION));
+    glfwSwapInterval(1); // Enable V-Sync
+
+    
+    int w, h;
+    glfwGetFramebufferSize(window, &w, &h);
+    
+    // Manually trigger the callback to calculate scale/black bars
+    framebuffer_size_callback(window, w, h);
 
     // 5. Setup Callbacks
     glfwSetKeyCallback(window, key_callback);
@@ -132,6 +225,7 @@ int main() {
 
         engine_render(&state);
         render_game(&state);
+        flush_batch();
         glfwSwapBuffers(window);
     }
 

@@ -113,15 +113,14 @@ Texture load_texture(const char *filename);
 // RENDERER API
 void init_renderer();
 
-void clear_screen(Color color);
+void set_texture_filter_mode(int mode);
 
-void draw_rect(float x, float y, float w, float h, float rotation, Color color);
-void draw_rect_outline(float x, float y, float w, float h, float rotation, Color color); // for debugging collision boxes
+void clear_screen();
+void clear_game_area(Color color);
+void enable_scissor_test();
 
-void draw_circle(float x, float y, float radius, float rotation, Color color);
-void draw_circle_outline(float x, float y, float radius, float rotation, Color color); // for debugging collision boxes
-
-void draw_line(float x1, float y1, float x2, float y2, float thickness, Color color);
+void draw_rect(float x, float y, float w, float h, float rotation, Color color, int hollow);
+void draw_circle(float x, float y, float radius, float rotation, Color color, int hollow);
 void draw_texture(Texture texture, float x, float y, float w, float h, float rotation, Color tint);
 void destroy_texture(Texture *tex);
 

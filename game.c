@@ -14,6 +14,8 @@ static Texture tex_boat;
 
 void init_game(GameState *state) {
     srand((unsigned int)time(NULL));
+
+    set_texture_filter_mode(1);
     
     // Load textures
     tex_boat = load_texture("assets/boat.png");
@@ -106,7 +108,7 @@ void update_game(GameState *state, float dt) {
 }
 
 void render_game(GameState *state) {
-
+    
 }
 
 void close_game(GameState *state) {

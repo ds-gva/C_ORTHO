@@ -10,10 +10,14 @@ void engine_update(GameState *state, float dt) {
 void engine_render(GameState *state) {
 
     clear_screen(state->background); // Clear the screen to the background color
+    enable_scissor_test();
+    clear_game_area(COLOR_BLACK);
+
+
     
     set_camera(state->camera.x, state->camera.y, state->camera.zoom); // Set the camera position and zoom level
-    begin_camera_mode(); // Begin the camera mode
-    
+
+    begin_camera_mode();
     // Render all entities
     for (int i = 0; i < state->count; i++) {
         Entity *e = &state->entities[i];
@@ -23,10 +27,10 @@ void engine_render(GameState *state) {
         
         switch (e->visual_type) {
             case SHAPE_RECT:
-                draw_rect(e->x, e->y, e->visual.rect.width * s, e->visual.rect.height * s, e->rotation, e->color);
+                draw_rect(e->x, e->y, e->visual.rect.width * s, e->visual.rect.height * s, e->rotation, e->color, 0);
                 break;
             case SHAPE_CIRCLE:
-                draw_circle(e->x, e->y, e->visual.circle.radius * s, e->rotation, e->color);
+                draw_circle(e->x, e->y, e->visual.circle.radius * s, e->rotation, e->color, 0);
                 break;
             case VISUAL_SPRITE:
                 draw_texture(*e->visual.sprite.texture, e->x, e->y, 
@@ -49,12 +53,13 @@ void engine_render(GameState *state) {
             Color debug_color = e->collider.is_colliding ? COLOR_RED : COLOR_GREEN;
             
             if (e->collider.type == SHAPE_CIRCLE) {
-                draw_circle_outline(cx, cy, e->collider.circle.radius, 0, debug_color);
+                draw_circle(cx, cy, e->collider.circle.radius, 0, debug_color, 1);
             } else if (e->collider.type == SHAPE_RECT) {
-                draw_rect_outline(cx, cy, e->collider.rect.width, e->collider.rect.height, 0, debug_color);
+                draw_rect(cx, cy, e->collider.rect.width, e->collider.rect.height, 0, debug_color, 1);
             }
         }
     }
+
     
     end_camera_mode();
 }
