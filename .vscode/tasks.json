@@ -23,6 +23,7 @@
                 "${workspaceFolder}\\src\\engine\\resources.c",
                 "${workspaceFolder}\\src\\engine\\tilemap.c",
                 "${workspaceFolder}\\src\\engine\\lighting.c",
+                "${workspaceFolder}\\src\\game\\sandbox.c",
                 "${workspaceFolder}\\third_party\\glad\\glad.c",
                 "${workspaceFolder}\\src\\engine\\engine_core.c",
 

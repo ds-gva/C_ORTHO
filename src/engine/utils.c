@@ -48,3 +48,13 @@ char* load_file_text(const char* path) {
     fclose(file);
     return buffer;
 }
+
+// Helper: lerp a color
+static Color lerp_color(Color a, Color b, float t) {
+    return (Color){
+        a.r + (b.r - a.r) * t,
+        a.g + (b.g - a.g) * t,
+        a.b + (b.b - a.b) * t,
+        a.a + (b.a - a.a) * t
+    };
+}

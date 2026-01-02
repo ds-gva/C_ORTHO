@@ -16,8 +16,6 @@
 // -----------------------
 
 // --- GLOBALS ---
-// Logical Size: The game "thinks" it is this size always.
-// 640x360 (Pixel Art), 1920x1080 (HD), or 1024x768 (Retro)
 const int LOGICAL_WIDTH = 1024;
 const int LOGICAL_HEIGHT = 768;
 
@@ -50,8 +48,14 @@ static int glfw_to_engine_key(int key) {
         case GLFW_KEY_LEFT_SHIFT: return KEY_SHIFT;
         case GLFW_KEY_LEFT_CONTROL: return KEY_CTRL;
         case GLFW_KEY_F1:       return KEY_F1;
+        case GLFW_KEY_TAB:      return KEY_TAB;
+        case GLFW_KEY_BACKSPACE: return KEY_BACKSPACE;
         default:
+            // Letters A-Z
             if (key >= 'A' && key <= 'Z') return KEY_A + (key - 'A');
+            // Numbers 0-9
+            if (key >= '0' && key <= '9') return KEY_0 + (key - '0');
+            
             return -1;
     }
 }
@@ -117,15 +121,15 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
     // Convert Physical Mouse -> Logical Mouse
-    // 1. Subtract Black Bar offset
+    // Subtract Black Bar offset
     float mx = (float)xpos - viewport.x;
     float my = (float)ypos - viewport.y;
     
-    // 2. Un-scale
+    // Un-scale
     mx /= viewport.scale;
     my /= viewport.scale;
     
-    // 3. Clamp (Optional: prevent inputs outside the game area)
+    // Clamp (Optional: prevent inputs outside the game area)
     // if (mx < 0) mx = 0; if (mx > LOGICAL_WIDTH) mx = LOGICAL_WIDTH; ...
 
     input_update_mouse(mx, my);
@@ -163,7 +167,7 @@ int main() {
     // Set correct initial size
     g_screen_width = LOGICAL_WIDTH;
     g_screen_height = LOGICAL_HEIGHT;
-    // 3. Create Window
+    // Create Window
     GLFWwindow* window = glfwCreateWindow(g_screen_width, g_screen_height, "C_ORTHO2D Mini Game Engine", NULL, NULL);
     if (!window) {
         printf("Failed to create GLFW window\n");
@@ -173,7 +177,7 @@ int main() {
 
 
     glfwMakeContextCurrent(window);
-    // 4. LOAD OPENGL FUNCTIONS (GLAD)
+    // LOAD OPENGL FUNCTIONS (GLAD)
     // This must happen AFTER window creation but BEFORE any drawing
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         printf("Failed to initialize GLAD\n");
@@ -189,13 +193,13 @@ int main() {
     // Manually trigger the callback to calculate scale/black bars
     framebuffer_size_callback(window, w, h);
 
-    // 5. Setup Callbacks
+    // Setup Callbacks
     glfwSetKeyCallback(window, key_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetMouseButtonCallback(window, mouse_button_callback);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-    // 6. Engine Initialization
+    // Engine Initialization
     init_renderer();
     GameState state = {0};
     init_game(&state);

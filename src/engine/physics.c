@@ -1,4 +1,5 @@
 #include "physics.h"
+#include "math_common.h"
 #include <math.h>
 #include <stdlib.h> // For abs/fabs if needed
 
@@ -215,15 +216,19 @@ void resolve_collision(Entity *a, Entity *b, Manifold *m) {
 }
 
 void physics_update(GameState *state, float dt) {
-    // Apply velocity
+    // Apply velocity and drag to all dynamic entities
     for (int i = 0; i < state->count; i++) {
         Entity *e = &state->entities[i];
-        if (!e->active) continue;
+        if (!e->active || e->mass == 0.0f) continue;
 
-        if (e->mass > 0.0f) {
-                e->x += e->vel_x * dt;
-                e->y += e->vel_y * dt;
-            }
+        // Apply position update
+        e->x += e->vel_x * dt;
+        e->y += e->vel_y * dt;
+        
+        // Apply friction (linear slowdown toward zero)
+        // This slows down objects that were pushed/bumped
+        e->vel_x = move_towardf(e->vel_x, 0.0f, e->friction * dt);
+        e->vel_y = move_towardf(e->vel_y, 0.0f, e->friction * dt);
     }
 
     // Reset collision flags

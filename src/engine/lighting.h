@@ -30,6 +30,11 @@ void init_lighting(void);
 void lighting_enable(int enabled);
 int lighting_is_enabled(void);
 
+// Adaptive point lights: scale intensity based on ambient brightness
+// When enabled, point lights contribute less during bright daylight (more realistic)
+void lighting_set_adaptive(int enabled);
+int lighting_is_adaptive(void);
+
 // --- DIRECTIONAL LIGHT API ---
 void lighting_set_directional(float angle, Color color, float intensity);
 void lighting_set_sun_angle(float angle);             // Quick angle update

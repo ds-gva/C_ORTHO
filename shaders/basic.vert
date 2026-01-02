@@ -8,7 +8,7 @@ layout (location = 3) in float aType;
 out vec4 vColor;
 out vec2 vTexCoord;
 out float vType;
-out vec2 vWorldPos;  // Pass world position for lighting calculations
+out vec2 vWorldPos; 
 
 uniform mat4 uProjection;
 uniform mat4 uView;
@@ -17,7 +17,7 @@ void main() {
     vColor = aColor;
     vTexCoord = aTexCoord;
     vType = aType;
-    vWorldPos = aPos;  // World position before camera transform
+    vWorldPos = aPos;
     
     gl_Position = uProjection * uView * vec4(aPos.x, aPos.y, 0.0, 1.0);
 }

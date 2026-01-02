@@ -11,6 +11,7 @@ uniform sampler2D uTexture;
 
 // Lighting uniforms
 uniform int uLightingEnabled;
+uniform int uAdaptiveLights;  // Scale point lights based on ambient brightness
 uniform vec3 uAmbient;
 uniform int uLightCount;
 uniform vec2 uLightPos[16];
@@ -30,7 +31,7 @@ void main() {
         alpha = smoothstep(0.5, 0.5 - delta, dist);
     }
     
-    // --- TYPE 2: HOLLOW CIRCLE (Border) ---
+    // TYPE 2: HOLLOW CIRCLE (for collision visibility)
     else if (vType > 1.9 && vType < 2.1) {
         float dist = distance(vTexCoord, vec2(0.5));
         float delta = 0.01;
@@ -40,7 +41,7 @@ void main() {
         alpha = outer - inner;
     }
 
-    // --- TYPE 3: HOLLOW RECT (Border) ---
+    // TYPE 3: HOLLOW RECT (for collision visibility)
     else if (vType > 2.9 && vType < 3.1) {
         float border = 0.05;
         float mask = 0.0;
@@ -58,6 +59,18 @@ void main() {
 
     } else {
         finalLight = uAmbient;
+        
+        // Calculate ambient brightness for adaptive scaling
+        float ambientBrightness = (uAmbient.r + uAmbient.g + uAmbient.b) / 3.0;
+        
+        // Adaptive scaling: point lights contribute less when ambient is bright
+        // At ambient=0: scale=1.0 (full contribution)
+        // At ambient=1: scale≈0.2 (minimal contribution)
+        float adaptiveScale = 1.0;
+        if (uAdaptiveLights == 1) {
+            adaptiveScale = 1.0 / (1.0 + ambientBrightness * 4.0);
+        }
+        
         if (uLightCount > 0) {
             for (int i = 0; i < uLightCount; i++) {
                 float dist = distance(vWorldPos, uLightPos[i]);
@@ -65,8 +78,8 @@ void main() {
                 // Smooth falloff: 1 at center, 0 at radius edge
                 float attenuation = 1.0 - smoothstep(0.0, uLightRadius[i], dist);
                 
-                // Add this light's contribution
-                finalLight += uLightColor[i] * attenuation * uLightIntensity[i];
+                // Add this light's contribution (scaled if adaptive is on)
+                finalLight += uLightColor[i] * attenuation * uLightIntensity[i] * adaptiveScale;
             }
         }
     }

@@ -60,18 +60,20 @@ typedef struct {
     float rotation; // degrees
     float scale;
     
-    // --- DEPTH SORTING ---
+    // DEPTH SORTING
     int sort_layer;         // Coarse layer (SORT_LAYER_DEFAULT, etc.) - sorted first
     int z_order;            // Fine control within layer (higher = in front) - sorted second
     float sort_offset_y;    // Added to Y for Y-sorting (feet vs center) - sorted third
 
-    // --- PHYSICS --
-    float vel_x, vel_y; // velocity
-    float mass;
-    float restitution;
-    float friction;
-    float drag;
-    float move_speed;
+    // PHYSICS
+    float vel_x, vel_y;   // Current velocity (px/s)
+    float mass;           // Only for collisions (0 = static/immovable)
+    float restitution;    // Bounciness on collision (0-1)
+    
+    // MOVEMENT
+    float max_speed;      // Target max velocity (px/s), e.g. 200
+    float acceleration;   // How fast to reach max_speed (px/s²), e.g. 800
+    float friction;       // How fast to stop (px/s²), e.g. 600
     
     // --- SHADOW ---
     int casts_shadow;       // 1 = draw drop shadow under this entity
@@ -110,7 +112,7 @@ typedef struct {
 
 } Entity;
 
-#define MAX_ENTITIES 100
+#define MAX_ENTITIES 1000
 
 
 typedef struct {
@@ -167,6 +169,9 @@ typedef enum {
     KEY_I, KEY_J, KEY_K, KEY_L, KEY_M, KEY_N, KEY_O, KEY_P,
     KEY_Q, KEY_R, KEY_S, KEY_T, KEY_U, KEY_V, KEY_W, KEY_X,
     KEY_Y, KEY_Z,
+    
+    // Numbers
+    KEY_0, KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9,
     
     // Special
     KEY_SPACE, KEY_ESCAPE, KEY_ENTER, KEY_SHIFT, KEY_CTRL,

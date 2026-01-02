@@ -15,4 +15,13 @@ static inline float lerpf(float a, float b, float t) {
     return a + (b - a) * t;
 }
 
+// Move 'from' toward 'to' by at most 'max_delta'
+// Returns 'to' if distance is less than max_delta
+static inline float move_towardf(float from, float to, float max_delta) {
+    float diff = to - from;
+    if (diff > max_delta) return from + max_delta;
+    if (diff < -max_delta) return from - max_delta;
+    return to;
+}
+
 #endif

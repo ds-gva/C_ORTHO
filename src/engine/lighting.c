@@ -17,6 +17,7 @@ typedef struct {
     int count;
     Color ambient;
     int enabled;
+    int adaptive;  // Scale point light intensity based on ambient brightness
 } LightingState;
 
 static LightingState g_lighting = {0};
@@ -25,14 +26,16 @@ void init_lighting(void) {
     memset(&g_lighting, 0, sizeof(LightingState));
     g_lighting.enabled = 1;
     g_lighting.count = 0;
+    g_lighting.adaptive = 1;  // Adaptive point lights ON by default
     
-    // Ambient = darkness level when there's no directional/point lights
-    g_lighting.ambient = (Color){0.1f, 0.1f, 0.1f, 1.0f};
+    // Ambient = base darkness (the "night" level without any lights)
+    g_lighting.ambient = (Color){0.08f, 0.08f, 0.12f, 1.0f};  // Dark with cool tint
     
-    // Default sun: angled from south, bright white
+    // Default sun: subtle fill light so point lights are the stars
+    // Keep low so colored lights (torches, campfires) show their color
     g_lighting.directional.angle = 180.0f;      // Sun from South
-    g_lighting.directional.color = (Color){0.9f, 0.9f, 0.9f, 1.0f};
-    g_lighting.directional.intensity = 1.0f;
+    g_lighting.directional.color = (Color){0.9f, 0.85f, 0.8f, 1.0f};   // Slightly warm
+    g_lighting.directional.intensity = 0.25f;   // Low - lets point lights dominate
     g_lighting.directional.orthogonal = 1;      // Shadows disabled by default
 }
 
@@ -44,9 +47,18 @@ int lighting_is_enabled(void) {
     return g_lighting.enabled;
 }
 
+void lighting_set_adaptive(int enabled) {
+    g_lighting.adaptive = enabled;
+}
+
+int lighting_is_adaptive(void) {
+    return g_lighting.adaptive;
+}
+
 void lighting_set_ambient(Color color) {
     g_lighting.ambient = color;
 }
+
 
 // --- DIRECTIONAL LIGHT ---
 
@@ -166,6 +178,12 @@ void lighting_apply(void) {
         glUniform1i(loc, g_lighting.enabled);
     }
     
+    // Upload adaptive lighting state
+    loc = glGetUniformLocation(shader_program, "uAdaptiveLights");
+    if (loc != -1) {
+        glUniform1i(loc, g_lighting.adaptive);
+    }
+
     // Count active lights and upload
     int active_count = 0;
     for (int i = 0; i < g_lighting.count; i++) {

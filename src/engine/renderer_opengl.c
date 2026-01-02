@@ -384,7 +384,6 @@ void draw_texture(Texture texture, float x, float y, float w, float h, float rot
 }
 
 
-
 // Set the camera position and zoom level//
 // At the moment the camera is stored as a global in current_camera ; probably wanna change this going forward
 void set_camera(float x, float y, float zoom) {

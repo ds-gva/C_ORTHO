@@ -7,8 +7,9 @@ static void entity_set_defaults(Entity *e) {
     e->scale = 1.0f;
     e->color = (Color){1,1,1,1};
     e->mass  = 1.0f;
-    e->drag = 0.95f;
-    e->move_speed = 500.0f;
+    e->max_speed = 200.0f;     // px/s - actual movement speed
+    e->acceleration = 800.0f;  // px/s² - how fast to reach max_speed
+    e->friction = 600.0f;      // px/s² - how fast to stop
     e->collider.active = 1;
     
     // Depth sorting defaults
@@ -60,6 +61,7 @@ Entity* spawn_sprite(GameState *state, Texture *tex, float x, float y) {
     if (!e) return NULL;
     
     e->x = x; e->y = y;
+    e->mass = 0.5f;
     e->visual_type = VISUAL_SPRITE;
     e->visual.sprite.texture = tex;
     e->visual.sprite.width = (float)tex->width;
@@ -69,6 +71,7 @@ Entity* spawn_sprite(GameState *state, Texture *tex, float x, float y) {
     e->collider.type = SHAPE_RECT;
     e->collider.rect.width = (float)tex->width;
     e->collider.rect.height = (float)tex->height;
+    e->collider.mask = LAYER_WALL;
     
     return e;
 }
@@ -94,7 +97,6 @@ Entity* spawn_primitive_wall(GameState *state, float x, float y, float w, float 
     e->collider.rect.width = w;
     e->collider.rect.height = h;
     e->collider.layer = LAYER_WALL;
-    e->collider.mask = LAYER_PLAYER | LAYER_ENEMY;
 
     return e;
 }
@@ -115,8 +117,7 @@ Entity* spawn_ball(GameState *state, float x, float y, float radius, Color color
     
     e->collider.type = SHAPE_CIRCLE;
     e->collider.circle.radius = radius;
-    e->collider.layer = LAYER_ENEMY;  // Default layer
-    e->collider.mask = LAYER_ENEMY | LAYER_WALL;
+    e->collider.mask = LAYER_WALL;
     
     return e;
 }
