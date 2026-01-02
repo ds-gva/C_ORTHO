@@ -5,6 +5,16 @@
 
 #define MAX_POINT_LIGHTS 16
 
+// --- DIRECTIONAL LIGHT (Sun) ---
+// Controls scene lighting and shadow direction
+typedef struct {
+    float angle;          // Sun direction: 0-360° (0=North, 90=East, 180=South, 270=West)
+    Color color;          // Light color tint
+    float intensity;      // Brightness (0.0 - 2.0+)
+    int orthogonal;       // 1 = sun directly overhead (no shadows), 0 = angled light
+} DirectionalLight;
+
+// --- POINT LIGHT ---
 typedef struct {
     float x, y;           // World position
     float radius;         // Light falloff radius
@@ -14,11 +24,19 @@ typedef struct {
 } PointLight;
 
 // Initialize the lighting system
-void lighting_init(void);
+void init_lighting(void);
 
 // Master toggle for lighting (1 = enabled, 0 = disabled)
 void lighting_enable(int enabled);
 int lighting_is_enabled(void);
+
+// --- DIRECTIONAL LIGHT API ---
+void lighting_set_directional(float angle, Color color, float intensity);
+void lighting_set_sun_angle(float angle);             // Quick angle update
+void lighting_set_orthogonal(int orthogonal);         // 1 = overhead (no shadows), 0 = angled
+int lighting_is_orthogonal(void);                     // Check if shadows are disabled
+float lighting_get_sun_angle(void);                   // Get current sun angle in degrees
+DirectionalLight lighting_get_directional(void);
 
 // Set the ambient light color (the "darkness" color when no lights)
 void lighting_set_ambient(Color color);
@@ -43,5 +61,9 @@ int lighting_get_count(void);
 
 // Apply lighting uniforms to shader (called internally by renderer)
 void lighting_apply(void);
+
+// Calculate shadow opacity reduction at a world position (0.0 = full shadow, 1.0 = no shadow)
+// Used to fade shadows when they're in lit areas
+float lighting_get_shadow_fade(float world_x, float world_y);
 
 #endif

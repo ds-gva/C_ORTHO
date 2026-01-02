@@ -6,7 +6,8 @@
 extern int g_screen_width;
 extern int g_screen_height;
 extern int g_debug_draw;
-extern int g_y_sort_enabled;  // Toggle Y-sorting (1 = on, 0 = off)
+extern int g_y_sort_enabled;   // Toggle Y-sorting (1 = on, 0 = off)
+extern int g_shadows_enabled;  // Toggle blob shadows (1 = on, 0 = off)
 
 typedef struct {
     float r, g, b, a;
@@ -72,6 +73,12 @@ typedef struct {
     float drag;
     float move_speed;
     
+    // --- SHADOW ---
+    int casts_shadow;       // 1 = draw drop shadow under this entity
+    float shadow_offset;    // Distance from entity center (in pixels) - direction from sun angle
+    float shadow_scale;     // Size relative to entity (0.8 = 80% of entity size)
+    float shadow_opacity;   // Darkness (0.0 - 1.0)
+
     // --- VISUALS ---
     Color color;
     ShapeType visual_type; // RECT, CIRCLE, or TRIANGLE

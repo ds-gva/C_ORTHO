@@ -15,6 +15,12 @@ static void entity_set_defaults(Entity *e) {
     e->sort_layer = SORT_LAYER_DEFAULT;
     e->z_order = 0;
     e->sort_offset_y = 0.0f;
+    
+    // Shadow defaults (off by default)
+    e->casts_shadow = 0;
+    e->shadow_offset = 10.0f;   // Offset in pixels
+    e->shadow_scale = 1.0f;
+    e->shadow_opacity = 0.8f;
 }
 
 Entity* entity_alloc(GameState *state) {

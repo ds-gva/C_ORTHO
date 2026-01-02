@@ -13,7 +13,6 @@ GLint g_texture_filter_mode = GL_LINEAR;
 GLuint current_texture_id = 0; // Tracks which texture is currently active
 
 GLuint shader_program;
-GLuint VAO, VBO; // Vertex Array & Buffer Objects (We will setup these in Step 2)
 
 static Camera current_camera = {0.0f, 0.0f, 1.0f};
 static int render_mode_camera = 0;
@@ -204,7 +203,7 @@ void flush_batch() {
     GLint locView = glGetUniformLocation(shader_program, "uView");
     glUniformMatrix4fv(locView, 1, GL_FALSE, view);
 
-    // Projection Logi
+    // Projection Logic
     float ortho[16];
     get_ortho_matrix(ortho, (float)g_screen_width, (float)g_screen_height);
     GLint locProj = glGetUniformLocation(shader_program, "uProjection");
@@ -385,6 +384,7 @@ void draw_texture(Texture texture, float x, float y, float w, float h, float rot
 }
 
 
+
 // Set the camera position and zoom level//
 // At the moment the camera is stored as a global in current_camera ; probably wanna change this going forward
 void set_camera(float x, float y, float zoom) {
@@ -434,6 +434,9 @@ void init_renderer() {
 
     init_shaders();
     init_renderer_buffers();
+    
+    // Initialize lighting with safe defaults (shadows off, neutral ambient)
+    init_lighting();
 }
 
 

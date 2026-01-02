@@ -1,15 +1,18 @@
-// lighting.c — Simple 2D point light system
+// lighting.c — 2D lighting system with directional (sun) and point lights
 
 #include "lighting.h"
+#include "math_common.h"
 #include <glad/glad.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 
 // External reference to shader program from renderer
 extern GLuint shader_program;
 
 // Internal lighting state
 typedef struct {
+    DirectionalLight directional;  // Sun/global light
     PointLight lights[MAX_POINT_LIGHTS];
     int count;
     Color ambient;
@@ -18,11 +21,19 @@ typedef struct {
 
 static LightingState g_lighting = {0};
 
-void lighting_init(void) {
+void init_lighting(void) {
     memset(&g_lighting, 0, sizeof(LightingState));
     g_lighting.enabled = 1;
-    g_lighting.ambient = (Color){0.3f, 0.3f, 0.35f, 1.0f};  // Slightly bright default
     g_lighting.count = 0;
+    
+    // Ambient = darkness level when there's no directional/point lights
+    g_lighting.ambient = (Color){0.1f, 0.1f, 0.1f, 1.0f};
+    
+    // Default sun: angled from south, bright white
+    g_lighting.directional.angle = 180.0f;      // Sun from South
+    g_lighting.directional.color = (Color){0.9f, 0.9f, 0.9f, 1.0f};
+    g_lighting.directional.intensity = 1.0f;
+    g_lighting.directional.orthogonal = 1;      // Shadows disabled by default
 }
 
 void lighting_enable(int enabled) {
@@ -36,6 +47,36 @@ int lighting_is_enabled(void) {
 void lighting_set_ambient(Color color) {
     g_lighting.ambient = color;
 }
+
+// --- DIRECTIONAL LIGHT ---
+
+void lighting_set_directional(float angle, Color color, float intensity) {
+    g_lighting.directional.angle = angle;
+    g_lighting.directional.color = color;
+    g_lighting.directional.intensity = intensity;
+}
+
+void lighting_set_sun_angle(float angle) {
+    g_lighting.directional.angle = angle;
+}
+
+void lighting_set_orthogonal(int orthogonal) {
+    g_lighting.directional.orthogonal = orthogonal;
+}
+
+int lighting_is_orthogonal(void) {
+    return g_lighting.directional.orthogonal;
+}
+
+float lighting_get_sun_angle(void) {
+    return g_lighting.directional.angle;
+}
+
+DirectionalLight lighting_get_directional(void) {
+    return g_lighting.directional;
+}
+
+// --- POINT LIGHTS ---
 
 int lighting_add_point(float x, float y, float radius, Color color, float intensity) {
     // Find first inactive slot or use next available
@@ -107,10 +148,16 @@ int lighting_get_count(void) {
 }
 
 void lighting_apply(void) {
-    // Upload ambient color
+    // Calculate effective ambient = base ambient + directional light contribution
+    // Directional light acts as the "sun" that illuminates everything uniformly
+    float eff_r = g_lighting.ambient.r + g_lighting.directional.color.r * g_lighting.directional.intensity;
+    float eff_g = g_lighting.ambient.g + g_lighting.directional.color.g * g_lighting.directional.intensity;
+    float eff_b = g_lighting.ambient.b + g_lighting.directional.color.b * g_lighting.directional.intensity;
+    
+    // Upload combined ambient + directional as the scene's base lighting
     GLint loc = glGetUniformLocation(shader_program, "uAmbient");
     if (loc != -1) {
-        glUniform3f(loc, g_lighting.ambient.r, g_lighting.ambient.g, g_lighting.ambient.b);
+        glUniform3f(loc, eff_r, eff_g, eff_b);
     }
     
     // Upload enabled state
@@ -158,4 +205,31 @@ void lighting_apply(void) {
         
         upload_index++;
     }
+}
+
+float lighting_get_shadow_fade(float world_x, float world_y) {
+    if (!g_lighting.enabled) return 0.0f;  // No fade if lighting disabled
+    
+    float total_light = 0.0f;
+    
+    // Accumulate light contribution from all point lights at this position
+    for (int i = 0; i < g_lighting.count; i++) {
+        PointLight* l = &g_lighting.lights[i];
+        if (!l->active) continue;
+        
+        // Distance from shadow position to light
+        float dx = world_x - l->x;
+        float dy = world_y - l->y;
+        float dist = sqrtf(dx * dx + dy * dy);
+        
+        // Smooth falloff within light radius
+        if (dist < l->radius) {
+            float attenuation = 1.0f - (dist / l->radius);
+            attenuation = attenuation * attenuation;  // Quadratic falloff
+            total_light += attenuation * l->intensity;
+        }
+    }
+    
+    // Clamp to 0-1 range (1.0 = fully lit, shadow should be invisible)
+    return clampf(total_light, 0.0f, 1.0f);
 }

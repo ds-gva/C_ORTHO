@@ -31,7 +31,7 @@ struct { float x, y, w, h, scale; } viewport = {0};
 // Engine Globals
 int g_screen_width = 1024;
 int g_screen_height = 768;
-int g_debug_draw = 1;
+int g_debug_draw = 0;
 int running = 1;
 
 int is_fullscreen = 0;

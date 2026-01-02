@@ -31,18 +31,9 @@ void init_game(GameState *state) {
     test_map = tilemap_create(25, 19, 32, 32);
     tilemap_fill(test_map, 0);  // Fill entire map with tile ID 0 (meaning "draw")
     
-    // --- LIGHTING SETUP ---
-    lighting_init();
-    lighting_set_ambient((Color){0.15f, 0.15f, 0.2f, 1.0f});  // Dark blue-ish ambient
-    
-    // Player carries a warm torch light
-    player_light = lighting_add_point(400, 300, 200.0f, (Color){1.0f, 0.9f, 0.7f, 1.0f}, 1.0f);
     
     // Static campfire in the corner
     lighting_add_point(100, 100, 120.0f, (Color){1.0f, 0.5f, 0.2f, 1.0f}, 0.9f);
-    
-    // Cool blue light on the other side
-    lighting_add_point(700, 500, 150.0f, (Color){0.3f, 0.5f, 1.0f, 1.0f}, 0.7f);
     
     // Setup world
     state->background = COLOR_BLACK;
@@ -54,6 +45,8 @@ void init_game(GameState *state) {
     
     // Spawn player as SPRITE instead of ball
     Entity *player = spawn_sprite(state, tex_boat, 400, 300);
+    player->casts_shadow = 1;
+
     player->scale = 0.3f;
     player->tag = TAG_PLAYER;
     player->collider.layer = LAYER_PLAYER;
@@ -68,6 +61,7 @@ void init_game(GameState *state) {
     Color colors[] = {COLOR_RED, COLOR_BLUE, COLOR_GREEN, COLOR_YELLOW};
     for (int i = 0; i < 8; i++) {
         Entity *ball = spawn_ball(state, randf(100, 700), randf(100, 500), randf(15, 35), colors[i % 4]);
+        ball->casts_shadow = 1;
         ball->tag = TAG_BALL;
         ball->vel_x = randf(-200, 200);
         ball->vel_y = randf(-200, 200);
@@ -122,7 +116,7 @@ void update_game(GameState *state, float dt) {
     }
     
     // --- UPDATE PLAYER LIGHT ---
-    lighting_update_point(player_light, player->x, player->y);
+    //lighting_update_point(player_light, player->x, player->y);
     
     // --- CAMERA FOLLOWS PLAYER (smooth) ---
     state->camera.x = lerpf(state->camera.x, player->x, 0.1f);
