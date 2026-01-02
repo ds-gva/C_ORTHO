@@ -6,6 +6,7 @@
 #include "../engine/engine.h"
 #include "../engine/input.h"
 #include "../engine/resources.h"
+#include "../engine/font.h"
 
 // --- LINKER SETTINGS ---
 #pragma comment(lib, "glfw3.lib")
@@ -201,6 +202,7 @@ int main() {
 
     // Engine Initialization
     init_renderer();
+    font_init();
     GameState state = {0};
     init_game(&state);
 
@@ -235,6 +237,7 @@ int main() {
     }
 
     close_game(&state);
+    font_shutdown();
     resources_shutdown();  // Free all cached resources
     glfwDestroyWindow(window);
     glfwTerminate();

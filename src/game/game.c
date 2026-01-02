@@ -6,6 +6,7 @@
 #include "../engine/math_common.h"
 #include "../engine/tilemap.h"
 #include "../engine/lighting.h"
+#include "../engine/font.h"
 #include "sandbox.h"
 #include <stdlib.h>
 #include <time.h>
@@ -23,7 +24,10 @@ static Tilemap* test_map;
 
 // Movement mode (can be changed at runtime)
 static MovementMode player_movement = MOVE_MODE_CLICK_LOOK;
+static Font* my_font;
+
 int player_light;
+
 
 // ============================================================================
 // GAME INITIALIZATION
@@ -32,6 +36,8 @@ int player_light;
 void init_game(GameState *state) {
     srand((unsigned int)time(NULL));
     set_texture_filter_mode(1);
+
+    my_font = font_load("assets/fonts/OpenSans-Regular.ttf", 32.0f);
     
     // LOAD ASSETS
     tex_boat = resource_load_texture("assets/boat.png");
@@ -124,7 +130,7 @@ void render_world(GameState *state) {
 }
 
 void render_game(GameState *state) {
-    // UI/HUD elements (screen space) go here
+    draw_text(my_font, "Hello World!", 50, 50, COLOR_WHITE);
 }
 
 // ============================================================================

@@ -91,7 +91,7 @@ void main() {
     vec3 litColor = baseColor.rgb * finalLight;
     
     // Final output
-    FragColor = vec4(litColor, alpha * vColor.a);
+    FragColor = vec4(litColor, alpha);
     
     if (FragColor.a < 0.01) discard;
 }
