@@ -9,7 +9,7 @@ A lightweight top-down 2D game engine written in pure C with OpenGL. Mainly as a
 - **Physics** — AABB & circle collision with impulse resolution, Godot-style movement (max_speed, acceleration, friction)
 - **Tilemaps** — Basic grid-based level rendering
 - **Lighting** — Ambient, directional (sun), and dynamic point lights with smooth falloff
-- **Shadows** — Blob shadows with directional offset based on sun angle
+- **Shadows** — Blob/sprite shape shadows with directional offset based on sun angle
 - **Depth Sorting** — Layer → Z-order → Y-position sorting
 - **Input** — Abstracted keyboard/mouse with press/release detection
 - **Resources** — Texture caching with reference counting (PNG only)

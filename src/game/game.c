@@ -9,6 +9,7 @@
 #include "sandbox.h"
 #include <stdlib.h>
 #include <time.h>
+#include <math.h>
 
 // User-defined tags
 #define TAG_PLAYER  (1 << 0)
@@ -22,6 +23,7 @@ static Tilemap* test_map;
 
 // Movement mode (can be changed at runtime)
 static MovementMode player_movement = MOVE_MODE_CLICK_LOOK;
+int player_light;
 
 // ============================================================================
 // GAME INITIALIZATION
@@ -41,15 +43,14 @@ void init_game(GameState *state) {
     tilemap_fill(test_map, 0);
 
     lighting_set_adaptive(0);
-    
     lighting_set_orthogonal(0);
-    lighting_set_ambient((Color){0.1f, 0.08f, 0.06f, 1.0f});  // Warm dark ambient
-    lighting_set_directional(90, (Color){1.0f, 0.9f, 0.7f, 1.0f}, 0.5f);  // Warm sun
-
     
-    // SETUP LIGHTING
-    // Demonstrate point light - warm orange glow
-    lighting_add_point(100, 100, 200.0f, (Color){1.0f, 0.5f, 0.2f, 1.0f}, 0.8f);
+    // Slightly dark, cool-tinted ambient (like twilight/shade)
+    lighting_set_ambient((Color){0.35f, 0.38f, 0.45f, 1.0f});
+    lighting_set_directional(90, COLOR_WHITE, 0.0f);  // No directional contribution
+
+    // Warm orange/yellow player torch
+    player_light = lighting_add_point(100, 100, 180.0f, (Color){1.0f, 0.6f, 0.25f, 1.0f}, 1.2f);
     
     // SETUP WORLD
     state->background = COLOR_BLACK;
@@ -76,8 +77,8 @@ void init_game(GameState *state) {
         barrel->casts_shadow = 1;
         barrel->scale = 0.6f;
         barrel->mass = 0.2f;
-        barrel->friction = 0.0f;  // Low friction - barrels slide around
-        barrel->restitution = 0.3f;
+        barrel->friction = 0.0f;      // No friction
+        barrel->restitution = 1.0f;   // Perfect bounce - no energy loss
         barrel->collider.type = SHAPE_CIRCLE;
         barrel->collider.circle.radius = 30.0f;
         barrel->tag = TAG_BARREL;
@@ -98,7 +99,9 @@ void update_game(GameState *state, float dt) {
     
     // PLAYER MOVEMENT (using sandbox helper)
     movement_apply(player, state, player_movement, dt);
-    
+    lighting_update_point(player_light, player->x, player->y);
+
+
     // CAMERA (using sandbox helper)
     camera_follow_smooth(state, player->x, player->y, 0.9f);
     
