@@ -8,6 +8,7 @@
 #include "math_common.h"
 #include "engine.h"
 #include "lighting.h"
+#include "profiler.h"
 
 GLint g_texture_filter_mode = GL_LINEAR;
 GLuint current_texture_id = 0; // Tracks which texture is currently active
@@ -131,7 +132,7 @@ void init_renderer_buffers() {
     // Create the IBO (Index Buffer)
     // We use indices to reuse vertices. 1 Quad = 4 verts, but 6 indices (2 triangles).
     // This part is static; we calculate the pattern once and never change it.
-    uint32_t indices[MAX_INDICES];
+    static uint32_t indices[MAX_INDICES];
     int offset = 0;
     for (int i = 0; i < MAX_INDICES; i += 6) {
         indices[i + 0] = offset + 0;
@@ -174,6 +175,9 @@ void get_ortho_matrix(float *mat, float w, float h) {
 
 void flush_batch() {
     if (vertex_count == 0) return;
+    
+    // Record stats for profiler
+    profiler_record_draw_call(vertex_count / 4);
 
     glUseProgram(shader_program);
     
@@ -230,6 +234,7 @@ void draw_rect(float x, float y, float w, float h, float rotation, Color color, 
     // Check for Texture Switch
     // If we were drawing sprites, and now want a solid rect, we must flush.
     if (current_texture_id != white_texture) {
+        profiler_record_texture_switch();
         flush_batch();
         current_texture_id = white_texture;
     }
@@ -253,7 +258,7 @@ void draw_rect(float x, float y, float w, float h, float rotation, Color color, 
     float u[] = {0.0f, 1.0f, 1.0f, 0.0f};
     float v[] = {0.0f, 0.0f, 1.0f, 1.0f};
 
-    // 4. Fill Buffer
+    // Fill Buffer
     for (int i = 0; i < 4; i++) {
         Vertex *vert = &vertices[vertex_count + i];
         
@@ -286,6 +291,7 @@ void draw_rect(float x, float y, float w, float h, float rotation, Color color, 
 void draw_circle(float x, float y, float radius, float rotation, Color color, int hollow) {
     // Texture Switch (Circles use the white texture)
     if (current_texture_id != white_texture) {
+        profiler_record_texture_switch();
         flush_batch();
         current_texture_id = white_texture;
     }
@@ -338,6 +344,7 @@ void draw_texture(Texture texture, float x, float y, float w, float h, float rot
     // If the requested texture is different from the active one, we must draw what we have so far
     // and then switch textures.
     if (texture.id != current_texture_id) {
+        profiler_record_texture_switch();
         flush_batch();
         current_texture_id = texture.id;
     }

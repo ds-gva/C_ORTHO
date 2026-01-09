@@ -1,7 +1,16 @@
 #include "physics.h"
+#include "spatial.h"
 #include "math_common.h"
 #include <math.h>
-#include <stdlib.h> // For abs/fabs if needed
+#include <stdlib.h>
+#include <stdio.h>
+
+// Spatial index for broad-phase collision detection
+static SpatialIndex* g_spatial = NULL;
+
+// Buffer for spatial query results
+#define MAX_QUERY_RESULTS 128
+static Entity* query_buffer[MAX_QUERY_RESULTS];
 
 
 // Set of colission checks for different shapes
@@ -215,6 +224,40 @@ void resolve_collision(Entity *a, Entity *b, Manifold *m) {
     b->vel_y += impulse_y * inv_mass_b;
 }
 
+// --- PHYSICS LIFECYCLE ---
+
+void physics_init(float world_width, float world_height, float cell_size) {
+    if (g_spatial) {
+        spatial_destroy(g_spatial);
+    }
+    
+    SpatialConfig config = {
+        .type = SPATIAL_TYPE_GRID,
+        .world_width = world_width,
+        .world_height = world_height,
+        .cell_size = cell_size
+    };
+    
+    g_spatial = spatial_create(config);
+    
+    if (g_spatial) {
+        SpatialStats stats = spatial_get_stats(g_spatial);
+        printf("Physics: Spatial grid initialized (%d cells, %.0fx%.0f world, %.0f cell size)\n",
+               stats.total_cells, world_width, world_height, cell_size);
+    } else {
+        printf("Physics: WARNING - Failed to create spatial index, using O(n^2) fallback\n");
+    }
+}
+
+void physics_shutdown(void) {
+    if (g_spatial) {
+        spatial_destroy(g_spatial);
+        g_spatial = NULL;
+    }
+}
+
+// --- PHYSICS UPDATE ---
+
 void physics_update(GameState *state, float dt) {
     // Apply velocity and drag to all dynamic entities
     for (int i = 0; i < state->count; i++) {
@@ -236,28 +279,69 @@ void physics_update(GameState *state, float dt) {
         state->entities[i].collider.is_colliding = 0;
     }
 
-    // Check for collisions
-    for (int i = 0; i < state->count; i++) {
-        Entity *a = &state->entities[i];
-        if (!a->active) continue; 
-
-        for (int j = i + 1; j < state->count; j++) {
-            Entity *b = &state->entities[j];
-            if (!b->active) continue;
-
-            // Layer Check
-            if (!a->collider.active || !b->collider.active) continue;
-            if (!((a->collider.mask & b->collider.layer) || (b->collider.mask & a->collider.layer))) continue;
-
-            // Dispatch
-            Manifold m = check_collision_dispatch(a, b);
-
-            // Resolve
-            if (m.hit) {
-                a->collider.is_colliding = 1;
-                b->collider.is_colliding = 1;
-                resolve_collision(a, b, &m);
+    // --- BROAD PHASE: Spatial Partitioning ---
+    if (g_spatial) {
+        // Clear and rebuild spatial index
+        spatial_clear(g_spatial);
+        for (int i = 0; i < state->count; i++) {
+            Entity *e = &state->entities[i];
+            if (e->active && e->collider.active) {
+                spatial_insert(g_spatial, e);
             }
         }
-}
+        
+        // Check collisions using spatial queries
+        for (int i = 0; i < state->count; i++) {
+            Entity *a = &state->entities[i];
+            if (!a->active || !a->collider.active) continue;
+            
+            // Query for nearby entities
+            int num_candidates = spatial_query(g_spatial, a, query_buffer, MAX_QUERY_RESULTS);
+            
+            for (int j = 0; j < num_candidates; j++) {
+                Entity *b = query_buffer[j];
+                
+                // Skip if we've already checked this pair (a->id < b->id ensures each pair checked once)
+                if (a->id >= b->id) continue;
+                
+                // Layer Check
+                if (!((a->collider.mask & b->collider.layer) || (b->collider.mask & a->collider.layer))) continue;
+                
+                // Narrow Phase: Actual collision check
+                Manifold m = check_collision_dispatch(a, b);
+                
+                if (m.hit) {
+                    a->collider.is_colliding = 1;
+                    b->collider.is_colliding = 1;
+                    resolve_collision(a, b, &m);
+                }
+            }
+        }
+    } 
+    else {
+        // Fallback: O(n^2) brute force (if spatial index failed to initialize)
+        for (int i = 0; i < state->count; i++) {
+            Entity *a = &state->entities[i];
+            if (!a->active) continue; 
+
+            for (int j = i + 1; j < state->count; j++) {
+                Entity *b = &state->entities[j];
+                if (!b->active) continue;
+
+                // Layer Check
+                if (!a->collider.active || !b->collider.active) continue;
+                if (!((a->collider.mask & b->collider.layer) || (b->collider.mask & a->collider.layer))) continue;
+
+                // Dispatch
+                Manifold m = check_collision_dispatch(a, b);
+
+                // Resolve
+                if (m.hit) {
+                    a->collider.is_colliding = 1;
+                    b->collider.is_colliding = 1;
+                    resolve_collision(a, b, &m);
+                }
+            }
+        }
+    }
 }

@@ -1,12 +1,13 @@
-// 1. INCLUDE GLAD FIRST (Crucial!)
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-
 #include <stdio.h>
+#include <stdlib.h>
+
 #include "../engine/engine.h"
 #include "../engine/input.h"
 #include "../engine/resources.h"
 #include "../engine/font.h"
+#include "../engine/profiler.h"
 
 // --- LINKER SETTINGS ---
 #pragma comment(lib, "glfw3.lib")
@@ -203,8 +204,12 @@ int main() {
     // Engine Initialization
     init_renderer();
     font_init();
-    GameState state = {0};
-    init_game(&state);
+    profiler_init_gpu_timer();
+
+    GameState* state = calloc(1, sizeof(GameState));
+    if (!state) { printf("Failed to allocate GameState\n"); return -1; }
+
+    init_game(state);
 
     float last_frame_time = 0.0f;
     float accumulator = 0.0f;
@@ -212,6 +217,8 @@ int main() {
 
     // --- GAME LOOP ---
     while (!glfwWindowShouldClose(window)) {
+        profiler_frame_begin();
+        
         float current_time = (float)glfwGetTime();
         float dt = current_time - last_frame_time;
         last_frame_time = current_time;
@@ -224,19 +231,36 @@ int main() {
         if (is_key_pressed(KEY_F1)) g_debug_draw = !g_debug_draw;
         if (is_key_pressed(KEY_ESCAPE)) glfwSetWindowShouldClose(window, 1);
 
+        // --- UPDATE PHASE ---
+        profiler_begin_update();
         while (accumulator >= FIXED_DT) {
-            engine_update(&state, FIXED_DT);
-            update_game(&state, FIXED_DT);
+            engine_update(state, FIXED_DT);
+            update_game(state, FIXED_DT);
             accumulator -= FIXED_DT;
         }
+        profiler_end_update();
 
-        engine_render(&state);
-        render_game(&state);
+        // --- RENDER PHASE ---
+        profiler_begin_render();
+        profiler_gpu_begin();
+        
+        engine_render(state);
+        render_game(state);
         flush_batch();
+        
+        profiler_gpu_end();
+        profiler_end_render();
+
+        // --- SWAP PHASE ---
+        profiler_begin_swap();
         glfwSwapBuffers(window);
+        profiler_end_swap();
+        
+        profiler_frame_end();
     }
 
-    close_game(&state);
+    close_game(state);
+    free(state);
     font_shutdown();
     resources_shutdown();  // Free all cached resources
     glfwDestroyWindow(window);

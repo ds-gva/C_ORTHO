@@ -167,6 +167,7 @@ void lighting_apply(void) {
     float eff_b = g_lighting.ambient.b + g_lighting.directional.color.b * g_lighting.directional.intensity;
     
     // Upload combined ambient + directional as the scene's base lighting
+
     GLint loc = glGetUniformLocation(shader_program, "uAmbient");
     if (loc != -1) {
         glUniform3f(loc, eff_r, eff_g, eff_b);

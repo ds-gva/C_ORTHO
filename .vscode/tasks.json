@@ -2,7 +2,7 @@
     "tasks": [
         {
             "type": "cppbuild",
-            "label": "C/C++: cl.exe build active file",
+            "label": "Windows (GLFW) Build",
             "command": "cl.exe",
             "args": [
                 "/Zi",
@@ -10,14 +10,16 @@
                 "/MD",
                 "/Fe:",
                 "${workspaceFolder}\\bin\\my_game.exe",
+                "/FS",
                 "/Fo${workspaceFolder}\\bin\\",
                 "/Fd${workspaceFolder}\\bin\\",
-                "/I", "${workspaceFolder}\\include",
-                "${workspaceFolder}\\src\\platform\\platform_glfw.c", 
-                "${workspaceFolder}\\src\\game\\game.c",            
+                "/I",
+                "${workspaceFolder}\\include",
+                "${workspaceFolder}\\src\\platform\\platform_glfw.c",
+                "${workspaceFolder}\\src\\game\\game.c",
                 "${workspaceFolder}\\src\\engine\\renderer_opengl.c",
                 "${workspaceFolder}\\src\\engine\\physics.c",
-                "${workspaceFolder}\\src\\engine\\utils.c", 
+                "${workspaceFolder}\\src\\engine\\utils.c",
                 "${workspaceFolder}\\src\\engine\\entity.c",
                 "${workspaceFolder}\\src\\engine\\input.c",
                 "${workspaceFolder}\\src\\engine\\resources.c",
@@ -27,12 +29,11 @@
                 "${workspaceFolder}\\src\\game\\sandbox.c",
                 "${workspaceFolder}\\third_party\\glad\\glad.c",
                 "${workspaceFolder}\\src\\engine\\engine_core.c",
-
+                "${workspaceFolder}\\src\\engine\\profiler.c",
+                "${workspaceFolder}\\src\\engine\\spatial.c"
             ],
             "options": {
-                "cwd": "${workspaceFolder}",
-
-
+                "cwd": "${workspaceFolder}"
             },
             "problemMatcher": [
                 "$msCompile"

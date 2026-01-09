@@ -7,6 +7,8 @@
 #include "../engine/tilemap.h"
 #include "../engine/lighting.h"
 #include "../engine/font.h"
+#include "../engine/profiler.h"
+#include "../engine/physics.h"
 #include "sandbox.h"
 #include <stdlib.h>
 #include <time.h>
@@ -45,7 +47,7 @@ void init_game(GameState *state) {
     tex_tile = resource_load_texture("assets/tile.png");
     
     // CREATE TILEMAP
-    test_map = tilemap_create(25, 19, 32, 32);
+    test_map = tilemap_create(63, 63, 32, 32);
     tilemap_fill(test_map, 0);
 
     lighting_set_adaptive(0);
@@ -60,14 +62,18 @@ void init_game(GameState *state) {
     
     // SETUP WORLD
     state->background = COLOR_BLACK;
-    state->camera.x = 400;
-    state->camera.y = 300;
+    state->camera.x = 1000;
+    state->camera.y = 1000;
     state->camera.zoom = 1.0f;
     
-    spawn_world_bounds(state, 800, 600);
+    // Initialize physics with spatial partitioning
+    // Cell size should be >= largest entity diameter (barrels are ~60px)
+    physics_init(2000.0f, 2000.0f, 64.0f);
+    
+    spawn_world_bounds(state, 2000, 2000);
     
     // SPAWN PLAYER
-    Entity *player = spawn_sprite(state, tex_boat, 400, 300);
+    Entity *player = spawn_sprite(state, tex_boat, 1000, 1000);
     player->casts_shadow = 1;
     player->scale = 0.3f;
     player->tag = TAG_PLAYER;
@@ -78,15 +84,15 @@ void init_game(GameState *state) {
     player->collider.circle.radius = 25.0f;
     
     // SPAWN BARRELS
-    for (int i = 0; i < 5; i++) {
-        Entity *barrel = spawn_sprite(state, tex_barrel, randf(100, 700), randf(100, 500));
+    for (int i = 0; i < 1000; i++) {
+        Entity *barrel = spawn_sprite(state, tex_barrel, randf(100, 1900), randf(100, 1900));
         barrel->casts_shadow = 1;
-        barrel->scale = 0.6f;
+        barrel->scale = 0.4f;
         barrel->mass = 0.2f;
         barrel->friction = 0.0f;      // No friction
         barrel->restitution = 1.0f;   // Perfect bounce - no energy loss
         barrel->collider.type = SHAPE_CIRCLE;
-        barrel->collider.circle.radius = 30.0f;
+        barrel->collider.circle.radius = 16.0f;
         barrel->tag = TAG_BARREL;
         barrel->vel_x = randf(-200, 200);
         barrel->vel_y = randf(-200, 200);
@@ -131,6 +137,12 @@ void render_world(GameState *state) {
 
 void render_game(GameState *state) {
     draw_text(my_font, "Hello World!", 50, 50, COLOR_WHITE);
+    
+    // Show profiler overlay when debug mode is on (F1 to toggle)
+    if (g_debug_draw) {
+        profiler_draw_overlay(my_font, 10, 80);
+        profiler_draw_graph(10, 300, 200, 60);
+    }
 }
 
 // ============================================================================
@@ -138,6 +150,7 @@ void render_game(GameState *state) {
 // ============================================================================
 
 void close_game(GameState *state) {
+    physics_shutdown();
     tilemap_destroy(test_map);
     // Textures cleaned up by resources_shutdown()
 }

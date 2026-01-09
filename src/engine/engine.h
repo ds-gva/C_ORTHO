@@ -112,7 +112,7 @@ typedef struct {
 
 } Entity;
 
-#define MAX_ENTITIES 1000
+#define MAX_ENTITIES 10000
 
 
 typedef struct {

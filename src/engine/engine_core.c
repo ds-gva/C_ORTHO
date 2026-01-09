@@ -155,13 +155,10 @@ void engine_render(GameState *state) {
             float cx = e->x + e->collider.offset_x;
             float cy = e->y + e->collider.offset_y;
             
-            // Green = normal, Red = colliding
-            Color debug_color = e->collider.is_colliding ? COLOR_RED : COLOR_GREEN;
-            
             if (e->collider.type == SHAPE_CIRCLE) {
-                draw_circle(cx, cy, e->collider.circle.radius, 0, debug_color, 1);
+                draw_circle(cx, cy, e->collider.circle.radius, 0, COLOR_GREEN, 1);
             } else if (e->collider.type == SHAPE_RECT) {
-                draw_rect(cx, cy, e->collider.rect.width, e->collider.rect.height, 0, debug_color, 1);
+                draw_rect(cx, cy, e->collider.rect.width, e->collider.rect.height, 0, COLOR_GREEN, 1);
             }
         }
     }

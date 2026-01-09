@@ -23,6 +23,11 @@ Manifold check_collision_dispatch(const Entity *a, const Entity *b);
 // Physics Responses
 void resolve_collision(Entity *a, Entity *b, Manifold *m);
 
+// Physics System Lifecycle
+// Call physics_init AFTER setting up your world bounds
+void physics_init(float world_width, float world_height, float cell_size);
+void physics_shutdown(void);
+
 // Physics Update
 void physics_update(GameState *state, float dt);
 
